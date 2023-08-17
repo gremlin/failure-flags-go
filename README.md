@@ -28,7 +28,7 @@ import (
 ...
 
 // invoke any behaviors associated with active experiments from Gremlin
-failureflags.Invoke(FailureFlag{
+failureflags.Invoke(failureflags.FailureFlag{
     Name: `flagname`, // the name of your failure flag
     Labels: nil,      // additional metadata experiments can use for targeting
 } 
@@ -171,16 +171,36 @@ This Effect will cause Failure Flags to throw an Error with the provided message
 { "exception": "this is a custom message" }
 ```
 
-### Combining the Two for a "Delayed Exception"
+### Cause a Panic
+
+This Effect will cause Failure Flags to panic with the provided message. This is useful when validating that either your application handles Go panics correctly, or when assessing the impact to other parts of the system when your code panics.
+
+```json
+{ "panic": "this message will be used in an error provided to panic" }
+```
+
+### Combining Two for a "Delayed Exception" or "Delayed Panic"
 
 Many common failure modes eventually result in an exception being thrown, but there will be some delay before that happens. Examples include network connection failures, or degradation, or other timeout-based issues.
 
-This Effect Statement will cause a Failure Flag to pause for a full 2 seconds before throwing an exception/error a message, "Custom TCP Timeout Simulation"
+This Effect Statement will cause a Failure Flag to pause for a full 2 seconds before throwing an exception/error a message, "Custom TCP Timeout Simulation".
 
 ```json
 {
   "latency": 2000,
   "exception": "Custom TCP Timeout Simulation"
+}
+```
+
+This Effect Statement will cause a Failure Flag to pause for between one and two seconds before panicing.
+
+```json
+{
+  "latency": {
+    "ms": 1000,
+    "jitter": 1000
+  },
+  "panic": "a custom panic message"
 }
 ```
 
