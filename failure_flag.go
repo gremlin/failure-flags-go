@@ -1,3 +1,4 @@
+//nolint:unused
 package golang
 
 import (
@@ -22,6 +23,10 @@ var (
 	Version       = `v0.0.0`
 	LookupTimeout = 2 * time.Millisecond
 	LookupBackoff = 5 * time.Minute
+)
+
+const (
+	sdkLabelKey = `failure-flags-sdk-version`
 )
 
 // Behavior functions
@@ -104,18 +109,20 @@ func Invoke(ff FailureFlag) (active bool, impacted bool, err error) {
 // behaviors may be designed to induce panics.
 func (ff FailureFlag) Invoke() (active bool, impacted bool, err error) {
 	if ff.Logf != nil {
-		ff.Logf(`Invoke, %s, %v, %v`, ff.Name, ff.Labels, ff.DataReference != nil)
+		ff.Logf(`Invoke, %s, %v, %v`, ff.Name, ff.Labels, ff.DataReference != nil) //nolint
 	}
 
 	if len(ff.Name) <= 0 {
 		if ff.Logf != nil {
-			ff.Logf(`FailureFlag names must be non-empty`)
+			ff.Logf(`FailureFlag names must be non-empty`) //nolint
 		}
 		active = false
 		impacted = false
 		err = nil
 		return
 	}
+
+	ff.Labels[sdkLabelKey] = version
 
 	var behavior = ff.Behavior
 	if ff.Behavior == nil {
@@ -153,18 +160,18 @@ func FetchExperiment(ff FailureFlag) (result []Experiment, rerr error) {
 		}
 	}()
 	if ff.Logf != nil {
-		ff.Logf(`FetchExperiment invoked`)
+		ff.Logf(`FetchExperiment invoked`) //nolint
 	}
 	if !backoffUntil.IsZero() && backoffUntil.After(time.Now()) {
 		if ff.Logf != nil {
-			ff.Logf(`skipping until %v due to cooldown`, backoffUntil)
+			ff.Logf(`skipping until %v due to cooldown`, backoffUntil) //nolint
 		}
 	}
 	body, err := json.Marshal(&ff)
 	if err != nil {
 		// errors here indicate an issue in the SDK itself and the FailureFlag structure
 		if ff.Logf != nil {
-			ff.Logf(`unable to marshal FailureFlag and retrieve experiments, %v`, err)
+			ff.Logf(`unable to marshal FailureFlag and retrieve experiments, %v`, err) //nolint
 		}
 		return nil, err
 	}
@@ -172,7 +179,7 @@ func FetchExperiment(ff FailureFlag) (result []Experiment, rerr error) {
 	if err != nil {
 		// again, errors here indicate an issue in the SDK itself specifically the method name
 		if ff.Logf != nil {
-			ff.Logf(`unable to construct a request to retrieve experiments, %v`, err)
+			ff.Logf(`unable to construct a request to retrieve experiments, %v`, err) //nolint
 		}
 		return nil, err
 	}
@@ -190,8 +197,8 @@ func FetchExperiment(ff FailureFlag) (result []Experiment, rerr error) {
 		return experiments, nil
 	case <-after(LookupTimeout):
 		if ff.Logf != nil {
-			ff.Logf(`unable to retrieve experiments in under %v`, LookupTimeout)
-			ff.Logf(`backing off for %v`, LookupBackoff)
+			ff.Logf(`unable to retrieve experiments in under %v`, LookupTimeout) //nolint
+			ff.Logf(`backing off for %v`, LookupBackoff)                         //nolint
 		}
 		// There was a timeout waiting for the sidecar. In order not to impact
 		// the caller we will just return, but someone needs to hang around and
@@ -212,7 +219,7 @@ func doRequest(responseChan chan []Experiment, req *http.Request, logf Logf) {
 	response, err := client.Do(req)
 	if err != nil {
 		if logf != nil {
-			logf(`unable to fetch experiments, %v`, err)
+			logf(`unable to fetch experiments, %v`, err) //nolint
 		}
 		close(responseChan)
 		return
@@ -220,7 +227,7 @@ func doRequest(responseChan chan []Experiment, req *http.Request, logf Logf) {
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode > 299 {
 		if logf != nil {
-			logf(`unable to fetch experiments, code: %v`, response.StatusCode)
+			logf(`unable to fetch experiments, code: %v`, response.StatusCode) //nolint
 		}
 		close(responseChan)
 		return
@@ -232,7 +239,7 @@ func doRequest(responseChan chan []Experiment, req *http.Request, logf Logf) {
 
 	if t, ok := response.Header["Content-Type"]; ok && len(t) == 1 && t[0] != `application/json` {
 		if logf != nil {
-			logf(`experiments returned in improper content-type, code: %v`, response.StatusCode)
+			logf(`experiments returned in improper content-type, code: %v`, response.StatusCode) //nolint
 		}
 		close(responseChan)
 		return
@@ -241,7 +248,7 @@ func doRequest(responseChan chan []Experiment, req *http.Request, logf Logf) {
 	data, err := io.ReadAll(response.Body)
 	if err != nil {
 		if logf != nil {
-			logf(`unable to read fetched experiment data, %v`, err)
+			logf(`unable to read fetched experiment data, %v`, err) //nolint
 		}
 		close(responseChan)
 		return
@@ -251,7 +258,7 @@ func doRequest(responseChan chan []Experiment, req *http.Request, logf Logf) {
 	err = json.Unmarshal(data, &experiments)
 	if err != nil {
 		if logf != nil {
-			logf(`unable to unmarshal fetched experiment data, %v`, err)
+			logf(`unable to unmarshal fetched experiment data, %v`, err) //nolint
 		}
 		close(responseChan)
 		return
@@ -331,13 +338,13 @@ func Latency(ff FailureFlag, experiments []Experiment) (impacted bool, rerr erro
 		}
 	}()
 	if ff.Logf != nil {
-		ff.Logf(`latency processing %v experiments`, len(experiments))
+		ff.Logf(`latency processing %v experiments`, len(experiments)) //nolint
 	}
 	for _, e := range experiments {
 		entry, ok := e.Effect[EffectLatency]
 		if !ok {
 			if ff.Logf != nil {
-				ff.Logf(`experiment %v has no latency clause`, e.Name)
+				ff.Logf(`experiment %v has no latency clause`, e.Name) //nolint
 			}
 			continue
 		}
@@ -345,24 +352,24 @@ func Latency(ff FailureFlag, experiments []Experiment) (impacted bool, rerr erro
 		latency := 0 // in milliseconds
 		if isFieldNumber(entry) {
 			if ff.Logf != nil {
-				ff.Logf(`experiment %v has number latency clause`, e.Name)
+				ff.Logf(`experiment %v has number latency clause`, e.Name) //nolint
 			}
 			if err = json.Unmarshal(entry, &latency); err != nil {
 				// not actually a number, this is a bug in the SDK
 				if ff.Logf != nil {
-					ff.Logf(`experiment %v did not really have a number, %v`, e.Name, err)
+					ff.Logf(`experiment %v did not really have a number, %v`, e.Name, err) //nolint
 				}
 				continue
 			}
 		} else if isFieldString(entry) {
 			if ff.Logf != nil {
-				ff.Logf(`experiment %v has string latency clause`, e.Name)
+				ff.Logf(`experiment %v has string latency clause`, e.Name) //nolint
 			}
 			latencyString := ""
 			if err = json.Unmarshal(entry, &latencyString); err != nil {
 				// not actually a string, this is a bug in the SDK
 				if ff.Logf != nil {
-					ff.Logf(`experiment %v did not really have a string, %v`, e.Name, err)
+					ff.Logf(`experiment %v did not really have a string, %v`, e.Name, err) //nolint
 				}
 				continue
 			}
@@ -370,26 +377,26 @@ func Latency(ff FailureFlag, experiments []Experiment) (impacted bool, rerr erro
 			if err != nil {
 				// turns out it wasn't actually a parsable integer
 				if ff.Logf != nil {
-					ff.Logf(`experiment %v did not contain a parsable integer, %v`, e.Name, err)
+					ff.Logf(`experiment %v did not contain a parsable integer, %v`, e.Name, err) //nolint
 				}
 				continue
 			}
 		} else if isFieldObject(entry) {
 			if ff.Logf != nil {
-				ff.Logf(`experiment %v has object latency clause`, e.Name)
+				ff.Logf(`experiment %v has object latency clause`, e.Name) //nolint
 			}
 			spec := LatencySpec{}
 			if err := json.Unmarshal(entry, &spec); err != nil {
 				// not the kind of object we can work with
 				if ff.Logf != nil {
-					ff.Logf(`experiment %v did not really have an object, %v`, e.Name, err)
+					ff.Logf(`experiment %v did not really have an object, %v`, e.Name, err) //nolint
 				}
 				continue
 			}
 			latency = spec.MS + int(rand.Float64()*float64(spec.Jitter))
 		}
 		if ff.Logf != nil {
-			ff.Logf(`experiment %v specified %v milliseconds`, e.Name, latency)
+			ff.Logf(`experiment %v specified %v milliseconds`, e.Name, latency) //nolint
 		}
 		if latency > 0 {
 			impacted = true
