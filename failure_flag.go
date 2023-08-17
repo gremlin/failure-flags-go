@@ -122,6 +122,9 @@ func (ff FailureFlag) Invoke() (active bool, impacted bool, err error) {
 		return
 	}
 
+	if ff.Labels == nil {
+		ff.Labels = map[string]string{}
+	}
 	ff.Labels[sdkLabelKey] = version
 
 	var behavior = ff.Behavior
