@@ -27,10 +27,11 @@ import (
 
 ...
 
-FailureFlag{
+// invoke any behaviors associated with active experiments from Gremlin
+failureflags.Invoke(FailureFlag{
     Name: `flagname`, // the name of your failure flag
     Labels: nil,      // additional metadata experiments can use for targeting
-}.Invoke() // invoke any behaviors associated with active experiments from Gremlin
+} 
 
 ...
 ```
@@ -47,19 +48,18 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 
-    failureflags "github.com/gremlin/failure-flags-go"
+    gremlin "github.com/gremlin/failure-flags-go"
 )
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	start := time.Now()
 
-	FailureFlag{
+	gremlin.Invoke(gremlin.FailureFlag{
 	    Name: `http-ingress`,
 	    Labels: map[string]string{
 			`method`: request.HTTPMethod,
 			`path`: request.Path,
-		},
-	}.Invoke()
+		}})
 
 	return events.APIGatewayProxyResponse{
 		Body:       fmt.Sprintf(`{"processingTime": %v, "timestamp": "%v"}`, time.Since(start), start),
@@ -85,13 +85,13 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 
-    failureflags "github.com/gremlin/failure-flags-go"
+    gremlin "github.com/gremlin/failure-flags-go"
 )
 
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	start := time.Now()
 
-	FailureFlag{
+	gremlin.Invoke(gremlin.FailureFlag{
 	    Name: `http-ingress`,
 	    Labels: map[string]string{
 			`method`: request.HTTPMethod,
@@ -103,8 +103,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 			fmt.Fprintf(os.Stdout, `processing experiments: %v`, exps)
 			// continue processing using the default behavior chain
 			return failureFlags.DelayedPanicOrError(ff, exps)
-		},
-	}.Invoke()
+		}})
 
 	return events.APIGatewayProxyResponse{
 		Body:       fmt.Sprintf(`{"processingTime": %v, "timestamp": "%v"}`, time.Since(start), start),
