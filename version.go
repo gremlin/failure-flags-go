@@ -1,3 +1,3 @@
 package golang
 
-const version = `go-0.0.1`
+const version = `go-v0.1.0`
