@@ -1,0 +1,8 @@
+conver.out
+secrets/
+bin/
+pkg/
+dist/
+
+*.swp
+*.swa
