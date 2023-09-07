@@ -156,17 +156,19 @@ var (
 		},
 	}
 
-	rawExperimentPayload = `[{"id": "8675309", "name":"exp name", "protected": false, "startTime": "sometime", "rate": .50, "flag":{"name": "-", labels: {}}, "effect": {"latency": 5}}]`
-	noExperimentPayload  = `[]`
-	emptyPayload         = ``
-	textPayload          = `hello world`
+	rawExperimentPayload       = `[{"id": "8675309", "name":"exp name", "protected": false, "startTime": "sometime", "rate": .50, "flag":{"name": "-", labels: {}}, "effect": {"latency": 5}}]`
+	rawSingleExperimentPayload = `{"id": "8675309", "name":"exp name", "protected": false, "startTime": "sometime", "rate": .50, "flag":{"name": "-", labels: {}}, "effect": {"latency": 5}}`
+	noExperimentPayload        = `[]`
+	emptyPayload               = ``
+	textPayload                = `hello world`
 
 	responses = map[string]*bufio.Reader{
-		"none":             bufio.NewReader(bytes.NewBuffer([]byte(fmt.Sprintf("HTTP/1.1 200 OK\nContent-Type: application/json\nContent-Length: %d\n\n%s", len([]byte(noExperimentPayload)), noExperimentPayload)))),
-		"empty":            bufio.NewReader(bytes.NewBuffer([]byte(fmt.Sprintf("HTTP/1.1 200 OK\nContent-Type: application/json\nContent-Length: %d\n\n%s", len([]byte(emptyPayload)), emptyPayload)))),
-		"wrongContentType": bufio.NewReader(bytes.NewBuffer([]byte(fmt.Sprintf("HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: %d\n\n%s", len([]byte(textPayload)), textPayload)))),
-		"simpleLatency":    bufio.NewReader(bytes.NewBuffer([]byte(fmt.Sprintf("HTTP/1.1 200 OK\nContent-Type: application/json\nContent-Length: %d\n\n%s", len([]byte(rawExperimentPayload)), rawExperimentPayload)))),
-		"notFound":         bufio.NewReader(bytes.NewBuffer([]byte("HTTP/1.1 404 Not Found\n\n"))),
+		"none":                bufio.NewReader(bytes.NewBuffer([]byte(fmt.Sprintf("HTTP/1.1 200 OK\nContent-Type: application/json\nContent-Length: %d\n\n%s", len([]byte(noExperimentPayload)), noExperimentPayload)))),
+		"empty":               bufio.NewReader(bytes.NewBuffer([]byte(fmt.Sprintf("HTTP/1.1 200 OK\nContent-Type: application/json\nContent-Length: %d\n\n%s", len([]byte(emptyPayload)), emptyPayload)))),
+		"wrongContentType":    bufio.NewReader(bytes.NewBuffer([]byte(fmt.Sprintf("HTTP/1.1 200 OK\nContent-Type: text/html\nContent-Length: %d\n\n%s", len([]byte(textPayload)), textPayload)))),
+		"simpleLatency":       bufio.NewReader(bytes.NewBuffer([]byte(fmt.Sprintf("HTTP/1.1 200 OK\nContent-Type: application/json\nContent-Length: %d\n\n%s", len([]byte(rawExperimentPayload)), rawExperimentPayload)))),
+		"simpleSingleLatency": bufio.NewReader(bytes.NewBuffer([]byte(fmt.Sprintf("HTTP/1.1 200 OK\nContent-Type: application/json\nContent-Length: %d\n\n%s", len([]byte(rawSingleExperimentPayload)), rawSingleExperimentPayload)))),
+		"notFound":            bufio.NewReader(bytes.NewBuffer([]byte("HTTP/1.1 404 Not Found\n\n"))),
 	}
 )
 

@@ -20,14 +20,23 @@ type Requester func(chan []Experiment, *http.Request, Logf)
 
 // exported variables
 var (
-	Version       = `v0.0.0`
-	LookupTimeout = 2 * time.Millisecond
-	LookupBackoff = 5 * time.Minute
+	Version           = `v0.0.1`
+	VersionIdentifier = `go-` + Version
+	LookupTimeout     = 2 * time.Millisecond
+	LookupBackoff     = 5 * time.Minute
 )
 
 const (
-	sdkLabelKey = `failure-flags-sdk-version`
+	sdkLabelKey   = `failure-flags-sdk-version`
+	envEnabledKey = `FAILURE_FLAGS_ENABLED`
 )
+
+func isEnabled() bool {
+	if v, ok := os.LookupEnv(envEnabledKey); ok && (v == `1` || v == `true` || v == `True` || v == `TRUE`) {
+		return true
+	}
+	return false
+}
 
 // Behavior functions
 type Behavior func(ff FailureFlag, experiments []Experiment) (impacted bool, err error)
@@ -108,6 +117,12 @@ func Invoke(ff FailureFlag) (active bool, impacted bool, err error) {
 // configured behavior chain. This function will propagate panics as the
 // behaviors may be designed to induce panics.
 func (ff FailureFlag) Invoke() (active bool, impacted bool, err error) {
+	if !isEnabled() {
+		if ff.Logf != nil {
+			ff.Logf(`FAILURE_FLAGS_ENABLED is unset, or false`) //nolint
+		}
+		return
+	}
 	if ff.Logf != nil {
 		ff.Logf(`Invoke, %s, %v, %v`, ff.Name, ff.Labels, ff.DataReference != nil) //nolint
 	}
@@ -121,11 +136,6 @@ func (ff FailureFlag) Invoke() (active bool, impacted bool, err error) {
 		err = nil
 		return
 	}
-
-	if ff.Labels == nil {
-		ff.Labels = map[string]string{}
-	}
-	ff.Labels[sdkLabelKey] = version
 
 	var behavior = ff.Behavior
 	if ff.Behavior == nil {
@@ -151,6 +161,12 @@ func (ff FailureFlag) Invoke() (active bool, impacted bool, err error) {
 // experiments targeting the provided FailureFlag. This function should never be
 // allowed to propagate panics to the caller.
 func FetchExperiment(ff FailureFlag) (result []Experiment, rerr error) {
+	if !isEnabled() {
+		if ff.Logf != nil {
+			ff.Logf(`FAILURE_FLAGS_ENABLED is unset, or false`) //nolint
+		}
+		return
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			// swallow the panic and return cleanly
@@ -162,6 +178,14 @@ func FetchExperiment(ff FailureFlag) (result []Experiment, rerr error) {
 			return
 		}
 	}()
+	// TODO abort if FAILURE_FLAGS_ENABLED is not set
+
+	// decorate the labels with the SDK version
+	if ff.Labels == nil {
+		ff.Labels = map[string]string{}
+	}
+	ff.Labels[sdkLabelKey] = VersionIdentifier
+
 	if ff.Logf != nil {
 		ff.Logf(`FetchExperiment invoked`) //nolint
 	}
@@ -257,11 +281,40 @@ func doRequest(responseChan chan []Experiment, req *http.Request, logf Logf) {
 		return
 	}
 
-	var experiments []Experiment
-	err = json.Unmarshal(data, &experiments)
+	var rawExperiments json.RawMessage
+	err = json.Unmarshal(data, &rawExperiments)
 	if err != nil {
 		if logf != nil {
-			logf(`unable to unmarshal fetched experiment data, %v`, err) //nolint
+			logf(`unable to unmarshal raw fetched experiment data, %v`, err) //nolint
+		}
+		close(responseChan)
+		return
+	}
+
+	var experiments []Experiment
+	if isFieldObject(rawExperiments) {
+		var experiment Experiment
+		err = json.Unmarshal(data, &experiment)
+		if err != nil {
+			if logf != nil {
+				logf(`unable to unmarshal fetched experiment data, %v`, err) //nolint
+			}
+			close(responseChan)
+			return
+		}
+		experiments = []Experiment{experiment}
+	} else if isFieldArray(rawExperiments) {
+		err = json.Unmarshal(data, &experiments)
+		if err != nil {
+			if logf != nil {
+				logf(`unable to unmarshal fetched experiment data, %v`, err) //nolint
+			}
+			close(responseChan)
+			return
+		}
+	} else {
+		if logf != nil {
+			logf(`unrecognized response shape in fetched experiment data`) //nolint
 		}
 		close(responseChan)
 		return
