@@ -20,7 +20,7 @@ type Requester func(chan []Experiment, *http.Request, Logf)
 
 // exported variables
 var (
-	Version           = `v0.0.1`
+	Version           = `v0.2.0`
 	VersionIdentifier = `go-` + Version
 	LookupTimeout     = 2 * time.Millisecond
 	LookupBackoff     = 5 * time.Minute
@@ -178,7 +178,6 @@ func FetchExperiment(ff FailureFlag) (result []Experiment, rerr error) {
 			return
 		}
 	}()
-	// TODO abort if FAILURE_FLAGS_ENABLED is not set
 
 	// decorate the labels with the SDK version
 	if ff.Labels == nil {
@@ -513,7 +512,11 @@ func Panic(ff FailureFlag, experiments []Experiment) (bool, error) {
 }
 
 func Data(ff FailureFlag, experiments []Experiment) (impacted bool, err error) {
-	// TODO weave all the stuff in
+	for _, e := range experiments {
+		if ff.Logf != nil {
+			ff.Logf(`experiment %v has data clause; data is not yet implemented`, e.Name) //nolint
+		}
+	}
 	return false, nil
 }
 
