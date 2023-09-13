@@ -20,7 +20,7 @@ type Requester func(chan []Experiment, *http.Request, Logf)
 
 // exported variables
 var (
-	Version           = `v0.2.0`
+	Version           = `v1.0.0`
 	VersionIdentifier = `go-` + Version
 	LookupTimeout     = 2 * time.Millisecond
 	LookupBackoff     = 5 * time.Minute
