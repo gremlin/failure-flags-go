@@ -132,26 +132,32 @@ var (
 		`noExperiments`: Experiment{},
 		`simpleLatencyNumber`: Experiment{
 			Name:   `simpleLatencyNumber`,
+			Rate:   1.0,
 			Effect: map[string]json.RawMessage{"latency": json.RawMessage([]byte("20"))},
 		},
 		`simpleLatencyString`: Experiment{
 			Name:   `simpleLatencyString`,
+			Rate:   1.0,
 			Effect: map[string]json.RawMessage{"latency": json.RawMessage([]byte("\"30\""))},
 		},
 		`simpleLatencyObject`: Experiment{
 			Name:   `simpleLatencyObject`,
+			Rate:   1.0,
 			Effect: map[string]json.RawMessage{"latency": json.RawMessage([]byte("{\"ms\":40}"))},
 		},
 		`shortLatency`: Experiment{
 			Name:   `simpleLatencyNumber`,
+			Rate:   1.0,
 			Effect: map[string]json.RawMessage{"latency": json.RawMessage([]byte("5"))},
 		},
 		`latencyPanic`: Experiment{
 			Name:   `latencyPanic`,
+			Rate:   1.0,
 			Effect: map[string]json.RawMessage{"latency": json.RawMessage([]byte("5")), "panic": json.RawMessage([]byte(`"cp provided panic"`))},
 		},
 		`customBehaviorOnly`: Experiment{
 			Name:   `customBehaviorOnly`,
+			Rate:   1.0,
 			Effect: map[string]json.RawMessage{"custom": json.RawMessage([]byte("5"))},
 		},
 	}
@@ -172,9 +178,9 @@ var (
 	}
 )
 
-//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
+// \\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 // Fetch Tests
-//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
+// \\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 func TestFetchExperiment(t *testing.T) {
 	originalRequest := request
 	requesterSpy := &RequesterSpy{}
@@ -278,9 +284,9 @@ func TestFullFetchExperiment(t *testing.T) {
 	}
 }
 
-//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
+// \\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 // Invoke Tests
-//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
+// \\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 func TestInvoke(t *testing.T) {
 	requesterSpy := &RequesterSpy{}
 	request = requesterSpy.Requester
