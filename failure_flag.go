@@ -151,6 +151,18 @@ func (ff FailureFlag) Invoke() (active bool, impacted bool, err error) {
 		return
 	}
 
+	// filter (in-place) the experiments based on individual dice roles
+	dice := rand.Float64()
+	n := 0
+	for _, e := range experiments {
+		if e.Rate > 0 && e.Rate <= 1 && dice < e.Rate {
+			experiments[n] = e
+			n++
+		}
+	}
+	clear(experiments[n:])
+	experiments = experiments[:n]
+
 	// if there is at least one experiments
 	active = true
 	impacted, err = behavior(ff, experiments)
@@ -484,7 +496,7 @@ func Exception(ff FailureFlag, experiments []Experiment) (impacted bool, err err
 			}
 			if len(message) > 0 {
 				impacted = true
-				err = fmt.Errorf(message)
+				err = fmt.Errorf(`%v`, message)
 			}
 		}
 	}
@@ -504,7 +516,7 @@ func Panic(ff FailureFlag, experiments []Experiment) (bool, error) {
 				continue
 			}
 			if len(message) > 0 {
-				panic(fmt.Errorf(message))
+				panic(fmt.Errorf(`%v`, message))
 			}
 		}
 	}
