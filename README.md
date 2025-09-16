@@ -33,7 +33,7 @@ import (
 failureflags.Invoke(failureflags.FailureFlag{
     Name: `flagname`, // the name of your failure flag
     Labels: nil,      // additional metadata experiments can use for targeting
-} 
+}) 
 
 ...
 ```
