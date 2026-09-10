@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"runtime/debug"
 	"sync"
 	"testing"
 	"time"
@@ -487,4 +488,57 @@ func TestShouldNotPanic(t *testing.T) {
 		Name:   `simplePanicString`,
 		Effect: map[string]json.RawMessage{"exception": json.RawMessage([]byte("\"cp provided message\""))},
 	}})
+}
+
+// TestDetectVersion runs as this module's own test suite, so failure-flags-go
+// is the main module rather than a dependency — detectVersion should report
+// info.Main.Version (typically "(devel)"), not "unknown". Real consumers get
+// the module path branch instead; see the empirical check in README.md.
+func TestDetectVersion(t *testing.T) {
+	v := detectVersion()
+	if v == `` {
+		t.Fatal(`detectVersion returned an empty string`)
+	}
+	if v == `unknown` {
+		t.Fatal(`detectVersion returned "unknown" running this module's own tests; expected the main-module version (e.g. "(devel)")`)
+	}
+}
+
+func TestDetectVersionBranches(t *testing.T) {
+	originalReadBuildInfo := readBuildInfo
+	defer func() { readBuildInfo = originalReadBuildInfo }()
+
+	cases := []struct {
+		Name     string
+		Info     *debug.BuildInfo
+		Ok       bool
+		Expected string
+	}{
+		{`build info unavailable`, nil, false, `unknown`},
+		{`plain dependency`, &debug.BuildInfo{
+			Deps: []*debug.Module{{Path: modulePath, Version: `v1.2.3`}},
+		}, true, `v1.2.3`},
+		{`replace same path is a version pin, not a fork`, &debug.BuildInfo{
+			Deps: []*debug.Module{{Path: modulePath, Version: `v0.0.0`, Replace: &debug.Module{Path: modulePath, Version: `v1.0.0`}}},
+		}, true, `v1.0.0`},
+		{`replace different module path is a fork`, &debug.BuildInfo{
+			Deps: []*debug.Module{{Path: modulePath, Version: `v0.0.0`, Replace: &debug.Module{Path: `github.com/someuser/failure-flags-go`, Version: `v1.2.3-patched`}}},
+		}, true, `fork:github.com/someuser/failure-flags-go@v1.2.3-patched`},
+		{`replace local checkout is a fork with no version`, &debug.BuildInfo{
+			Deps: []*debug.Module{{Path: modulePath, Version: `v0.0.0`, Replace: &debug.Module{Path: `/local/checkout`, Version: `(devel)`}}},
+		}, true, `fork:/local/checkout`},
+		{`main module`, &debug.BuildInfo{
+			Main: debug.Module{Path: modulePath, Version: `(devel)`},
+		}, true, `(devel)`},
+		{`modulePath matches nothing`, &debug.BuildInfo{
+			Main: debug.Module{Path: `example.com/unrelated`, Version: `v1.0.0`},
+		}, true, `unknown-internal-error`},
+	}
+
+	for _, c := range cases {
+		readBuildInfo = func() (*debug.BuildInfo, bool) { return c.Info, c.Ok }
+		if v := detectVersion(); v != c.Expected {
+			t.Errorf(`case %q failed: expected %q, got %q`, c.Name, c.Expected, v)
+		}
+	}
 }

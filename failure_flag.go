@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"time"
 	"unicode"
@@ -18,13 +19,58 @@ import (
 type AfterProxy func(time.Duration) <-chan time.Time
 type Requester func(chan []Experiment, *http.Request, Logf)
 
+const modulePath = `github.com/gremlin/failure-flags-go`
+
+// Seam for tests to substitute synthetic build info.
+var readBuildInfo = debug.ReadBuildInfo
+
 // exported variables
 var (
-	Version           = `v1.0.0`
+	// Version is derived from build info rather than hardcoded, so it can't
+	// drift from the git tag consumers actually depend on. See README.md.
+	Version           = detectVersion()
 	VersionIdentifier = `go-` + Version
 	LookupTimeout     = 2 * time.Millisecond
 	LookupBackoff     = 5 * time.Minute
 )
+
+func detectVersion() string {
+	info, ok := readBuildInfo()
+	if !ok {
+		return `unknown`
+	}
+	for _, dep := range info.Deps {
+		if dep.Path == modulePath {
+			return resolveDepVersion(dep)
+		}
+	}
+	if info.Main.Path == modulePath {
+		return info.Main.Version
+	}
+	// Only reachable if modulePath itself no longer matches this module.
+	return `unknown-internal-error`
+}
+
+// A replace at a different path swaps in a fork; label it rather than
+// report its version as if it were an official release. A replace at the
+// same path is just a version pin, not a fork.
+func resolveDepVersion(dep *debug.Module) string {
+	r := dep.Replace
+	if r == nil {
+		return dep.Version
+	}
+	if r.Path != modulePath {
+		if isRealVersion(r.Version) {
+			return `fork:` + r.Path + `@` + r.Version
+		}
+		return `fork:` + r.Path
+	}
+	return r.Version
+}
+
+func isRealVersion(v string) bool {
+	return v != "" && v != `(devel)`
+}
 
 const (
 	sdkLabelKey   = `failure-flags-sdk-version`
