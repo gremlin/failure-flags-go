@@ -172,9 +172,9 @@ var (
 	}
 )
 
-//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
+// \\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 // Fetch Tests
-//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
+// \\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 func TestFetchExperiment(t *testing.T) {
 	originalRequest := request
 	requesterSpy := &RequesterSpy{}
@@ -278,9 +278,9 @@ func TestFullFetchExperiment(t *testing.T) {
 	}
 }
 
-//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
+// \\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 // Invoke Tests
-//\\//\\//\\//\\//\\//\\//\\//\\//\\//\\
+// \\//\\//\\//\\//\\//\\//\\//\\//\\//\\
 func TestInvoke(t *testing.T) {
 	requesterSpy := &RequesterSpy{}
 	request = requesterSpy.Requester
