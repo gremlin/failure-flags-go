@@ -274,4 +274,4 @@ Three ways to see the version in use:
 - From any compiled binary, without any cooperation from this library: `go version -m <binary>` lists every dependency and its resolved version.
 - In Gremlin: the `failure-flags-sdk-version` label already attached to every experiment fetch.
 
-One known caveat: if your `go.mod` uses a `replace` directive to point this module at a local fork, `golang.Version` reports `"unknown"` instead of a real version, since there's no tagged version to read in that case.
+If your `go.mod` uses a `replace` directive to point this module anywhere other than the official module path — a fork, or a local filesystem checkout — `golang.Version` reports `fork:<path>` (or `fork:<path>@<version>` when a real version is available) instead of a bare version, so a fork is never mistaken for an official release in telemetry. A `replace` that just pins the official module to a specific version isn't a fork, and still reports that version directly.
