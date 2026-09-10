@@ -484,7 +484,7 @@ func Exception(ff FailureFlag, experiments []Experiment) (impacted bool, err err
 			}
 			if len(message) > 0 {
 				impacted = true
-				err = fmt.Errorf(message)
+				err = fmt.Errorf("%s", message)
 			}
 		}
 	}
@@ -504,7 +504,7 @@ func Panic(ff FailureFlag, experiments []Experiment) (bool, error) {
 				continue
 			}
 			if len(message) > 0 {
-				panic(fmt.Errorf(message))
+				panic(fmt.Errorf("%s", message))
 			}
 		}
 	}
