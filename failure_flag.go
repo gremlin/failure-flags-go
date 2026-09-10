@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"time"
 	"unicode"
@@ -18,13 +19,45 @@ import (
 type AfterProxy func(time.Duration) <-chan time.Time
 type Requester func(chan []Experiment, *http.Request, Logf)
 
+const modulePath = `github.com/gremlin/failure-flags-go`
+
 // exported variables
 var (
-	Version           = `v1.0.0`
+	// Version reports the version of this module actually resolved into the
+	// consuming build, read back from runtime/debug build info rather than a
+	// hardcoded literal. That build info is embedded automatically by the Go
+	// toolchain on every module-aware build, so this can never drift from the
+	// git tag consumers depend on the way a hand-maintained constant could.
+	// See the "Versioning" section in README.md for how to observe this value.
+	Version           = detectVersion()
 	VersionIdentifier = `go-` + Version
 	LookupTimeout     = 2 * time.Millisecond
 	LookupBackoff     = 5 * time.Minute
 )
+
+// detectVersion reads this module's own resolved version out of the running
+// binary's build info. Returns "unknown" if build info is unavailable, or if
+// the consumer used a `replace` directive (e.g. a local fork) that has no
+// real version. Returns "(devel)" when this module is itself the main module,
+// as is the case running this repo's own tests.
+func detectVersion() string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return `unknown`
+	}
+	for _, dep := range info.Deps {
+		if dep.Path == modulePath {
+			if dep.Replace != nil {
+				return `unknown`
+			}
+			return dep.Version
+		}
+	}
+	if info.Main.Path == modulePath {
+		return info.Main.Version
+	}
+	return `unknown`
+}
 
 const (
 	sdkLabelKey   = `failure-flags-sdk-version`

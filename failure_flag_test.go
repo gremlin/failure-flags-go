@@ -488,3 +488,17 @@ func TestShouldNotPanic(t *testing.T) {
 		Effect: map[string]json.RawMessage{"exception": json.RawMessage([]byte("\"cp provided message\""))},
 	}})
 }
+
+// TestDetectVersion runs as this module's own test suite, so failure-flags-go
+// is the main module rather than a dependency — detectVersion should report
+// info.Main.Version (typically "(devel)"), not "unknown". Real consumers get
+// the module path branch instead; see the empirical check in README.md.
+func TestDetectVersion(t *testing.T) {
+	v := detectVersion()
+	if v == `` {
+		t.Fatal(`detectVersion returned an empty string`)
+	}
+	if v == `unknown` {
+		t.Fatal(`detectVersion returned "unknown" running this module's own tests; expected the main-module version (e.g. "(devel)")`)
+	}
+}

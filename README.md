@@ -263,3 +263,15 @@ They might also combine this with parts of the default chain:
   "my-jitter": 500
 }
 ```
+
+## Versioning
+
+`golang.Version` (and `golang.VersionIdentifier`, sent to the control plane as the `failure-flags-sdk-version` label on every experiment fetch) is not a hardcoded string. It's computed at package-init time from `runtime/debug.ReadBuildInfo()`, which reports the version of this module that your own build actually resolved — the same metadata the Go toolchain already embeds into every module-aware build. That means the reported version can never drift from the git tag you depend on; there's no separate file to keep in sync.
+
+Three ways to see the version in use:
+
+- In code: `golang.Version` (unchanged for existing callers).
+- From any compiled binary, without any cooperation from this library: `go version -m <binary>` lists every dependency and its resolved version.
+- In Gremlin: the `failure-flags-sdk-version` label already attached to every experiment fetch.
+
+One known caveat: if your `go.mod` uses a `replace` directive to point this module at a local fork, `golang.Version` reports `"unknown"` instead of a real version, since there's no tagged version to read in that case.
